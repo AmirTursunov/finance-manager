@@ -56,7 +56,16 @@ const startServer = async () => {
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       console.log(`\n${signal} received. Shutting down gracefully...`);
-      bot.stop('SIGTERM');
+      
+      // Only stop bot if it was launched in polling mode
+      if (!process.env.RENDER_EXTERNAL_URL) {
+        try {
+          bot.stop(signal);
+        } catch (e) {
+          // Ignore "Bot is not running" errors
+        }
+      }
+
       httpServer.close(() => {
         console.log('HTTP server closed.');
         process.exit(0);
