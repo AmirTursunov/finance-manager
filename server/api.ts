@@ -146,9 +146,14 @@ router.get('/stats/overview', async (req, res) => {
     res.json({
       totalIncome,
       totalExpense,
+      netProfit: totalIncome - totalExpense,
+      incomeTrend: 0, // Placeholder for trend logic
+      expenseTrend: 0,
+      profitTrend: 0,
       recentTransactions: transactions.slice(0, 10),
     });
   } catch (error) {
+    console.error('Overview Stats Error:', error);
     res.status(500).json({ error: 'Failed to fetch overview stats' });
   }
 });
