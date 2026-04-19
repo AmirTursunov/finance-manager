@@ -127,26 +127,35 @@ export const initBot = (io: any) => {
 export const launchBot = async (bot: Telegraf) => {
   const externalUrl = process.env.RENDER_EXTERNAL_URL;
   
+  // Prevent any unhandled telegram errors from crashing the process
+  bot.catch((err: any) => {
+    if (err.response?.error_code === 409) {
+      console.log('⚠️ Telegram Conflict (409) swallowed - Normal during redeploy');
+    } else {
+      console.error('❌ Telegram error:', err);
+    }
+  });
+
   try {
     if (externalUrl) {
       const webhookUrl = `${externalUrl}/api/telegraf-webhook`;
-      await bot.telegram.setWebhook(webhookUrl).catch(err => {
-        if (err.response?.error_code === 409) {
-          console.log('⚠️ Webhook conflict (409) - This is normal during deployment.');
-        } else {
-          throw err;
-        }
-      });
-      console.log(`🤖 Bot Webhook set: ${webhookUrl}`);
+      console.log(`📡 Registering Webhook: ${webhookUrl}`);
+      
+      // Delete existing potential polling and set new webhook
+      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      await bot.telegram.setWebhook(webhookUrl);
+      
+      console.log(`✅ Bot Webhook registered successfully`);
     } else {
+      // Local development only
       bot.launch();
       console.log('🤖 Bot launched in Polling mode (Dev)');
     }
   } catch (error: any) {
     if (error.response?.error_code === 409) {
-       console.log('⚠️ Bot conflict detected (409) during launch.');
+       console.log('⚠️ Conflict during launch - new instance taking charge');
     } else {
-      console.error('❌ Bot launch error:', error);
+      console.error('❌ Failed to launch bot:', error);
     }
   }
 };
