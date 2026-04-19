@@ -96,17 +96,43 @@ router.delete('/categories/:id', async (req, res) => {
   }
 });
 
-// Get analytics data
-router.get('/analytics', async (req, res) => {
+// Get analytics data with Monthly Dynamics
+router.get('/stats/analytics', async (req, res) => {
   try {
-    const expenses = await prisma.transaction.findMany({
-      where: { type: 'expense' },
+    const transactions = await prisma.transaction.findMany({
       include: { category: true }
     });
     
-    const incomes = await prisma.transaction.findMany({
-      where: { type: 'income' }
+    // Group by Month for Dynamics Chart
+    const monthsUz = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+    const monthlyHistoryMap: Record<string, { month: string, income: number, expense: number }> = {};
+
+    transactions.forEach(tx => {
+      const date = new Date(tx.date);
+      const month = monthsUz[date.getMonth()];
+      const year = date.getFullYear();
+      const key = `${month} ${year}`;
+
+      if (!monthlyHistoryMap[key]) {
+        monthlyHistoryMap[key] = { month: key, income: 0, expense: 0 };
+      }
+
+      if (tx.type === 'income') monthlyHistoryMap[key].income += tx.amount;
+      else monthlyHistoryMap[key].expense += tx.amount;
     });
+
+    // Convert map to sorted array
+    const monthlyHistory = Object.values(monthlyHistoryMap).sort((a, b) => {
+      const [mA, yA] = a.month.split(' ');
+      const [mB, yB] = b.month.split(' ');
+      const monthIndexA = monthsUz.indexOf(mA);
+      const monthIndexB = monthsUz.indexOf(mB);
+      if (yA !== yB) return Number(yA) - Number(yB);
+      return monthIndexA - monthIndexB;
+    });
+
+    const expenses = transactions.filter(tx => tx.type === 'expense');
+    const incomes = transactions.filter(tx => tx.type === 'income');
 
     const categoryBreakdown = expenses.reduce((acc, curr) => {
       const catName = curr.category?.name || 'Boshqa';
@@ -120,9 +146,11 @@ router.get('/analytics', async (req, res) => {
       categoryBreakdown: Object.keys(categoryBreakdown).map(name => ({
         name,
         value: categoryBreakdown[name]
-      }))
+      })),
+      monthlyHistory
     });
   } catch (error) {
+    console.error('Analytics Fetch Error:', error);
     res.status(500).json({ error: 'Analytics Error' });
   }
 });

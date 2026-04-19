@@ -60,20 +60,25 @@ export const initBot = (io: any) => {
         cat = categories.find(c => (c as any).type === parsed.type) || categories.find(c => c.name === 'Boshqa') || categories[0];
       }
 
+      // Ensure Tashkent Time (UTC+5)
+      const now = new Date();
+      const uzTime = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+
       const tx = await prisma.transaction.create({
         data: {
           amount: Number(parsed.amount),
           type: parsed.type,
           note: parsed.note || '-',
           categoryId: cat?.id,
-          date: new Date()
+          date: uzTime
         }
       });
 
       io.emit('transaction_updated');
 
+      const timeStr = uzTime.toISOString().replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, 5);
       const typeUz = parsed.type === 'income' ? '📈 Kirim' : '📉 Chiqim';
-      await ctx.reply(`${typeUz} ✅ Saqlandi!\n\n💰 Summa: ${Number(parsed.amount).toLocaleString()} so'm\n📂 Kategoriya: ${cat?.name || 'Boshqa'}\n📝 Izoh: ${parsed.note || '-'}`);
+      await ctx.reply(`${typeUz} ✅ Saqlandi!\n\n💰 Summa: ${Number(parsed.amount).toLocaleString()} so'm\n📂 Kategoriya: ${cat?.name || 'Boshqa'}\n📝 Izoh: ${parsed.note || '-'}\n🕒 Vaqt: ${timeStr}`);
     } catch (error) {
       console.error('Process error:', error);
       ctx.reply("❌ Amaliyotni bajarishda xatolik yuz berdi. Iltimos, bir ozdan so'ng qayta urinib ko'ring.");

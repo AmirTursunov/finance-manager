@@ -16,7 +16,7 @@ const fetcher = (url: string) => axios.get(url).then(res => res.data);
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const Analytics = () => {
-  const { data, mutate } = useSWR(`${API_URL}/analytics`, fetcher);
+  const { data, mutate } = useSWR(`${API_URL}/stats/analytics`, fetcher);
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
@@ -139,7 +139,7 @@ const Analytics = () => {
           </h2>
           <div style={{ height: '400px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.monthlyTrend}>
+              <BarChart data={data.monthlyHistory}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="month" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis 
