@@ -23,7 +23,7 @@ app.use(express.json());
 app.use('/api', apiRouter);
 
 // Serve Static Frontend for Production
-const clientDistPath = path.join(__dirname, '../client/dist');
+const clientDistPath = path.resolve(process.cwd(), 'client/dist');
 app.use(express.static(clientDistPath));
 
 // Handle React Routing - Return all requests to React app
