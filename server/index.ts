@@ -34,17 +34,36 @@ app.get(/.*/, (req, res) => {
 });
 
 const startServer = async () => {
-  await initPrisma();
-  
-  // Bot Init
-  const bot = initBot(io);
-  await launchBot(bot);
+  try {
+    await initPrisma();
+    
+    // Bot Init
+    const bot = initBot(io);
+    await launchBot(bot);
 
-  const PORT = process.env.PORT || 3001;
-  httpServer.listen(PORT, () => {
-    console.log(`🚀 Server & API is running on http://localhost:${PORT}`);
-    console.log(`🤖 Telegram Bot started`);
-  });
+    const PORT = process.env.PORT || 3001;
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 Server & API is running on port ${PORT}`);
+      console.log(`🤖 Telegram Bot started`);
+    });
+
+    // Graceful shutdown
+    const shutdown = async (signal: string) => {
+      console.log(`\n${signal} received. Shutting down gracefully...`);
+      bot.stop('SIGTERM');
+      httpServer.close(() => {
+        console.log('HTTP server closed.');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
 };
 
 startServer();
