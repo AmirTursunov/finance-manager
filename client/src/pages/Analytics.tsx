@@ -40,7 +40,7 @@ const Analytics = () => {
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Moliya_Hisoboti_${new Date().toLocaleDateString()}.pdf`);
+      pdf.save(`Moliya_Hisoboti_${format(new Date(), 'dd_MM_yyyy')}.pdf`);
     } catch (error) {
       console.error('PDF Export Error:', error);
     } finally {
@@ -48,13 +48,34 @@ const Analytics = () => {
     }
   };
 
-  const exportToExcel = () => {
-    if (!data || !data.categoryBreakdown) return;
+  const exportToExcel = async () => {
+    if (!data) return;
     
-    const ws = XLSX.utils.json_to_sheet(data.categoryBreakdown);
+    // Fetch all transactions for detailed export if not in data
+    let txs = data.recentTransactions;
+    try {
+      const res = await axios.get(`${API_URL}/transactions`);
+      txs = res.data;
+    } catch (e) {
+      console.error('Full TX fetch failed, using recent only');
+    }
+
+    const detailedData = txs.map((tx: any) => ({
+      'Sana': format(new Date(tx.date), 'dd/MM/yyyy, HH:mm:ss'),
+      'Kategoriya': tx.category?.name || 'Boshqa',
+      'Tur': tx.type === 'income' ? 'Kirim' : 'Chiqim',
+      'Summa (UZS)': tx.amount,
+      'Izoh': tx.note || '-'
+    }));
+
+    const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
+    const wsSummary = XLSX.utils.json_to_sheet(data.categoryBreakdown);
+    
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Kategoriyalar");
-    XLSX.writeFile(wb, `Moliya_Export_${new Date().toLocaleDateString()}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, wsDetailed, "Batafsil Tranzaksiyalar");
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Kategoriyalar Boyicha");
+    
+    XLSX.writeFile(wb, `Moliya_Tahlili_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
   };
 
   const formatYAxis = (value: number) => {

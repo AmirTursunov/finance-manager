@@ -3,8 +3,9 @@ import useSWR from 'swr';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import { Trash2, Pencil, X, Save } from 'lucide-react';
+import { Trash2, Pencil, X, Save, Download } from 'lucide-react';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const socket = io();
@@ -111,6 +112,34 @@ const Transactions = () => {
     };
   }, [mutate]);
 
+  const exportToExcel = () => {
+    if (!transactions) return;
+
+    const dataToExport = transactions.map((tx: any) => ({
+      'Sana': format(new Date(tx.date), 'dd/MM/yyyy, HH:mm:ss'),
+      'Kategoriya': tx.category?.name || 'Boshqa',
+      'Tur': tx.type === 'income' ? 'Kirim' : 'Chiqim',
+      'Summa (UZS)': tx.amount,
+      'Izoh': tx.note || '-'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Tranzaksiyalar");
+    
+    // Auto-size columns slightly
+    const wscols = [
+      {wch: 22}, // Sana
+      {wch: 15}, // Kategoriya
+      {wch: 10}, // Tur
+      {wch: 15}, // Summa
+      {wch: 35}, // Izoh
+    ];
+    ws['!cols'] = wscols;
+
+    XLSX.writeFile(wb, `Moliya_Hisoboti_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm("Ushbu tranzaksiyani o'chirmoqchimisiz?")) {
       try {
@@ -160,6 +189,9 @@ const Transactions = () => {
           <h1 className="page-title">Tranzaksiyalar Tarixi</h1>
           <span className="subtitle">Barcha moliya amallari ro'yxati</span>
         </div>
+        <button className="btn-primary" onClick={exportToExcel} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', cursor: 'pointer' }}>
+          <Download size={18} /> Excel Eksport
+        </button>
       </div>
       
       <div className="glass-card">
