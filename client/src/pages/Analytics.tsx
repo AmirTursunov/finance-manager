@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const socket = io('http://localhost:3001');
+const socket = io();
 
 const fetcher = (url: string) => axios.get(url).then(res => res.data);
 

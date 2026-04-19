@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import { Receipt, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const socket = io('http://localhost:3001');
+const socket = io();
 
 const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
