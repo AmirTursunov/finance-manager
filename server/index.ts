@@ -39,6 +39,12 @@ const startServer = async () => {
     
     // Bot Init
     const bot = initBot(io);
+  
+    // Webhook Middleware (Only for Production/Render)
+    if (process.env.RENDER_EXTERNAL_URL) {
+      app.use(bot.webhookCallback('/api/telegraf-webhook'));
+    }
+
     await launchBot(bot);
 
     const PORT = process.env.PORT || 3001;

@@ -125,5 +125,28 @@ export const initBot = (io: any) => {
 
 
 export const launchBot = async (bot: Telegraf) => {
-  bot.launch();
+  const externalUrl = process.env.RENDER_EXTERNAL_URL;
+  
+  try {
+    if (externalUrl) {
+      const webhookUrl = `${externalUrl}/api/telegraf-webhook`;
+      await bot.telegram.setWebhook(webhookUrl).catch(err => {
+        if (err.response?.error_code === 409) {
+          console.log('⚠️ Webhook conflict (409) - This is normal during deployment.');
+        } else {
+          throw err;
+        }
+      });
+      console.log(`🤖 Bot Webhook set: ${webhookUrl}`);
+    } else {
+      bot.launch();
+      console.log('🤖 Bot launched in Polling mode (Dev)');
+    }
+  } catch (error: any) {
+    if (error.response?.error_code === 409) {
+       console.log('⚠️ Bot conflict detected (409) during launch.');
+    } else {
+      console.error('❌ Bot launch error:', error);
+    }
+  }
 };
